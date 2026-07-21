@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Head from 'expo-router/head';
 import Screen from '../components/Screen';
@@ -59,13 +59,19 @@ interface ApplicationStatusState {
 
 // Mirrors the Dashboard's own load: local mock DB in guest/dev mode,
 // Supabase otherwise, with per-stage timeline events only fetched when
-// there's exactly one application to summarise. Auth is read straight from
-// the shared useAuth() context (already resolved by the time this screen
-// can render), so there's no separate async auth check here to race against.
-function useApplicationStatus(authenticated: boolean): ApplicationStatusState {
+// there's exactly one application to summarise.
+//
+// `authLoading` (useAuth()'s own loading flag) has to be threaded in and
+// checked first, not just `authenticated` — useAuth() forces authenticated
+// to false for the entire window before it resolves the real session, so
+// without this guard this hook would immediately (and wrongly) resolve to
+// "no applications" for an about-to-be-authenticated user, which is exactly
+// what caused the empty-state flash before the personalised view took over.
+function useApplicationStatus(authLoading: boolean, authenticated: boolean): ApplicationStatusState {
   const [state, setState] = useState<ApplicationStatusState>({ loading: true, applications: [], events: [] });
 
   const load = useCallback(async () => {
+    if (authLoading) return; // don't resolve anything until the real auth state is known
     if (!authenticated) {
       setState({ loading: false, applications: [], events: [] });
       return;
@@ -93,7 +99,7 @@ function useApplicationStatus(authenticated: boolean): ApplicationStatusState {
     }
 
     setState({ loading: false, applications, events });
-  }, [authenticated]);
+  }, [authLoading, authenticated]);
 
   useFocusEffect(
     useCallback(() => {
@@ -107,8 +113,8 @@ function useApplicationStatus(authenticated: boolean): ApplicationStatusState {
 export default function HomeScreen() {
   const router = useRouter();
   const isDesktop = useIsDesktop();
-  const { authenticated } = useAuth();
-  const { loading, applications, events } = useApplicationStatus(authenticated);
+  const { authenticated, loading: authLoading } = useAuth();
+  const { loading, applications, events } = useApplicationStatus(authLoading, authenticated);
   const hasApplication = !loading && applications.length > 0;
 
   // Which CEFR level to visually recommend on the IELTS Life Skills card —
@@ -190,7 +196,16 @@ export default function HomeScreen() {
     />
   );
 
-  const applyCard = hasApplication ? (
+  // Whether this card should say "I'm applying" or "Start another
+  // application" depends on `hasApplication`, which isn't known for certain
+  // until `loading` resolves — rendering either variant before then risks
+  // briefly showing the wrong one, which is exactly the flash this guards
+  // against. A neutral loading placeholder in between avoids that without
+  // blocking the rest of the page (hero, "how it works", SEO content) on
+  // it, none of which depend on this.
+  const applyCard = loading ? (
+    <LoadingActionCard style={isDesktop ? styles.gridItemPrimary : undefined} />
+  ) : hasApplication ? (
     <ActionCard
       variant="secondary"
       icon="file-plus"
@@ -388,6 +403,18 @@ function ActionCard({
   );
 }
 
+// Stands in for ActionCard's "New application" slot while we don't yet know
+// whether to show it or the "Start another application" variant — see the
+// `applyCard` loading branch in HomeScreen. Sized like the primary card so
+// there's no layout jump once the real content resolves.
+function LoadingActionCard({ style }: { style?: any }) {
+  return (
+    <View style={[card, styles.primaryCard, styles.loadingCard, style]}>
+      <ActivityIndicator size="small" color={colors.primary} />
+    </View>
+  );
+}
+
 // Like ActionCard, but offers three level-specific CTAs (A1/A2/B1) instead
 // of one — the recommended level (see inferDefaultLevel in level.ts) is
 // styled as the primary/filled button, the other two stay secondary/
@@ -498,6 +525,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
+  loadingCard: { minHeight: 168, alignItems: 'center', justifyContent: 'center' },
   secondaryCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
