@@ -1,0 +1,27 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@/assets/*": [
+        "./assets/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  // Deno Edge Functions are a separate runtime/toolchain (Deno globals,
+  // https:// imports) from the Expo/RN app — type-checked independently via
+  // `deno check`, not this tsconfig. See supabase/README.md.
+  "exclude": [
+    "node_modules",
+    "supabase/functions/**"
+  ]
+}

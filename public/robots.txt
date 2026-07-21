@@ -1,0 +1,32 @@
+# Replace https://example.com with the real production domain before launch.
+User-agent: *
+Disallow: /
+Disallow: /timeline
+Disallow: /costs
+Disallow: /ielts-a1-test
+Disallow: /shared
+Disallow: /profile
+Disallow: /questionnaire
+Disallow: /test-locations
+Disallow: /privacy-data
+Disallow: /quick-track
+Disallow: /auth/
+
+Allow: /home
+Allow: /visa-info
+Allow: /visa-info/spouse
+Allow: /visa-info/student
+Allow: /visa-info/skilled_worker
+Allow: /visa-info/visitor
+Allow: /visa-info/child
+Allow: /visa-info/settlement
+Allow: /visa-info/citizenship
+Allow: /guides
+Allow: /community
+Allow: /privacy
+Allow: /terms
+Allow: /ielts-life-skills/a1
+Allow: /ielts-life-skills/a2
+Allow: /ielts-life-skills/b1
+
+Sitemap: https://example.com/sitemap.xml
