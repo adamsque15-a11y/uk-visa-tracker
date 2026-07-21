@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Pressable, StyleSheet, RefreshControl, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Pressable, StyleSheet, RefreshControl, Modal, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Screen from '../../components/Screen';
 import Icon, { IconName } from '../../components/Icon';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import {
   getProgressSummary,
   parseISODate,
@@ -88,6 +89,10 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Application | null>(null);
   const router = useRouter();
+  const { loading: authLoading } = useAuth();
+  // Guards the initial render only (not refetches on later focuses) — see
+  // the loadApplications() guard below for why this can't resolve early.
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // Bank holidays load async (see lib/bankHolidays.ts); this just forces a
   // re-render once they're cached so the working-day figures below — which
@@ -99,6 +104,14 @@ export default function DashboardScreen() {
   }, []);
 
   const loadApplications = useCallback(async () => {
+    // This screen is also what an unauthenticated visitor transiently lands
+    // on at "/" before _layout.tsx's redirect effect sends them to /home
+    // (that effect only runs once auth resolves) — and even for a real
+    // signed-in user, running this query before the Supabase session is
+    // attached gets zero rows back from RLS. Wait for the real auth state
+    // before fetching anything, same principle as home.tsx's fix.
+    if (authLoading) return;
+
     let data: Application[];
 
     if (isLocalModeActive()) {
@@ -131,8 +144,9 @@ export default function DashboardScreen() {
       setEvents([]);
     }
 
+    setInitialLoadDone(true);
     setRefreshing(false);
-  }, []);
+  }, [authLoading]);
 
   useFocusEffect(
     useCallback(() => {
@@ -410,6 +424,17 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       </Screen>
+    );
+  }
+
+  if (authLoading || !initialLoadDone) {
+    // Neither "No applications yet" nor a populated dashboard is known to be
+    // correct yet — rendering either would risk the exact flash this guard
+    // exists to prevent (see loadApplications()'s authLoading guard above).
+    return (
+      <View style={[styles.container, styles.emptyState]}>
+        <ActivityIndicator size="small" color={colors.primary} />
+      </View>
     );
   }
 
