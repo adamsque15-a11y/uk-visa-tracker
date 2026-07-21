@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import Icon from '../../components/Icon';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
@@ -17,8 +18,14 @@ export default function LoginScreen() {
   const { mode: initialMode } = useLocalSearchParams<{ mode?: 'signin' | 'signup' }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode === 'signup' ? 'signup' : 'signin');
+  // Only meaningful in signup mode — shown live as soon as the user has
+  // typed something in the confirm field, not just on submit.
+  const passwordsMismatch = mode === 'signup' && confirmPassword.length > 0 && password !== confirmPassword;
   // React Native's Alert.alert has no web implementation in this app's setup
   // (it silently no-ops on web) — shown inline instead, matching the pattern
   // already used by forgot-password.tsx/reset-password.tsx.
@@ -31,6 +38,14 @@ export default function LoginScreen() {
       return;
     }
 
+    // Belt-and-braces: the button is already disabled while this is true,
+    // but don't rely solely on that to keep a mismatched password from
+    // ever reaching Supabase.
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError("Passwords don't match");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -39,7 +54,10 @@ export default function LoginScreen() {
           ? await supabase.auth.signInWithPassword({ email, password })
           : await supabase.auth.signUp({ email, password });
       if (authError) {
-        setError(authError.message);
+        // supabase-js can hand back a message that's just the empty-object
+        // stringification of an internal error (seen for a malformed 500
+        // from the signUp endpoint) — not something a user can act on.
+        setError(authError.message && authError.message !== '{}' ? authError.message : 'Something went wrong. Please try again.');
       } else if (mode === 'signup') {
         trackEvent('sign_up', { method: 'email' });
       }
@@ -144,16 +162,52 @@ export default function LoginScreen() {
           value={email}
           onChangeText={setEmail}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordFieldWrapper}>
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
+            placeholder="Password"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword((s) => !s)}
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+          >
+            <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} color="#999" />
+          </TouchableOpacity>
+        </View>
+
+        {mode === 'signup' && (
+          <>
+            <View style={styles.passwordFieldWrapper}>
+              <TextInput
+                style={[styles.input, styles.passwordInput, passwordsMismatch && styles.inputError]}
+                placeholder="Confirm password"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowConfirmPassword((s) => !s)}
+                accessibilityLabel={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={18} color="#999" />
+              </TouchableOpacity>
+            </View>
+            {passwordsMismatch && <Text style={styles.errorText}>Passwords don't match</Text>}
+          </>
+        )}
+
         {error && <Text style={styles.errorText}>{error}</Text>}
 
-        <TouchableOpacity style={styles.primaryButton} onPress={handleEmailAuth} disabled={loading}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleEmailAuth}
+          disabled={loading || (mode === 'signup' && (confirmPassword.length === 0 || password !== confirmPassword))}
+        >
           <Text style={styles.primaryButtonText}>
             {loading ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Sign Up'}
           </Text>
@@ -165,7 +219,12 @@ export default function LoginScreen() {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
+        <TouchableOpacity
+          onPress={() => {
+            setMode(mode === 'signin' ? 'signup' : 'signin');
+            setConfirmPassword('');
+          }}
+        >
           <Text style={styles.switchModeText}>
             {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </Text>
@@ -204,6 +263,18 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
     fontSize: 16,
+  },
+  inputError: { borderColor: '#c81e3a' },
+  passwordFieldWrapper: { position: 'relative', justifyContent: 'center' },
+  passwordInput: { paddingRight: 44 },
+  eyeButton: {
+    position: 'absolute',
+    right: 4,
+    top: 0,
+    bottom: 12,
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryButton: {
     backgroundColor: '#1a3c6e',
