@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     await sendEmail({
       to: profile.email,
       subject: 'Welcome to UK Visa Tracker',
-      html: emailLayout({ bodyHtml, unsubscribeUrl }),
+      html: emailLayout({ bodyHtml, unsubscribeUrl, siteUrl }),
     });
 
     return new Response('OK', { status: 200 });

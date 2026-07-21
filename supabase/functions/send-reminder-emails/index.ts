@@ -65,6 +65,7 @@ Deno.serve(async (_req) => {
           <a href="${siteUrl}" style="display:inline-block;background:#1a3c6e;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">View your checklist</a>
         `,
         unsubscribeUrl,
+        siteUrl,
       }),
     });
 
@@ -108,6 +109,7 @@ Deno.serve(async (_req) => {
           <a href="${siteUrl}" style="display:inline-block;background:#1a3c6e;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600;">View your progress</a>
         `,
         unsubscribeUrl,
+        siteUrl,
       }),
     });
 
