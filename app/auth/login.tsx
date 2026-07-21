@@ -5,6 +5,7 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../lib/supabase';
 import { TEST_ACCOUNT, setMockSession } from '../../lib/devAuth';
+import { trackEvent } from '../../lib/analytics';
 
 // Lets the in-app browser sheet used on native (WebBrowser.openAuthSessionAsync
 // below) close itself once Google redirects back — a no-op on web, where this
@@ -37,7 +38,11 @@ export default function LoginScreen() {
         mode === 'signin'
           ? await supabase.auth.signInWithPassword({ email, password })
           : await supabase.auth.signUp({ email, password });
-      if (authError) setError(authError.message);
+      if (authError) {
+        setError(authError.message);
+      } else if (mode === 'signup') {
+        trackEvent('sign_up', { method: 'email' });
+      }
     } catch {
       setError('Something went wrong. Check your connection and try again.');
     } finally {

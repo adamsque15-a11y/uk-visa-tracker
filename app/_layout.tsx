@@ -1,18 +1,39 @@
 import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import Head from 'expo-router/head';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { consumePendingIntent } from '../lib/navigationIntent';
 import AppShell from '../components/AppShell';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
 import { registerServiceWorker } from '../lib/pwa';
+import { initSentry, Sentry } from '../lib/sentry';
 
-export default function RootLayout() {
+initSentry();
+
+// Both components inject a <script> tag into `document` on mount — only
+// meaningful (and only safe) in a real browser. Skip on native, and skip
+// during the static-export prerender pass, which runs the web bundle in a
+// Node process with no `document` at all.
+const isBrowser = typeof document !== 'undefined';
+const showVercelInstrumentation = Platform.OS === 'web' && isBrowser;
+
+function RootLayout() {
   return (
     <AuthProvider>
       <RootLayoutNav />
+      {showVercelInstrumentation && (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      )}
     </AuthProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 function RootLayoutNav() {
   const { loading, authenticated } = useAuth();

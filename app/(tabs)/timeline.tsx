@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Linking, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
@@ -17,6 +17,7 @@ import { ApplicationLocation, ServiceSpeed, VisaType, getTargetProcessingDays, R
 import { isLocalModeActive } from '../../lib/localMode';
 import { getOrCreateShareToken } from '../../lib/checklistShare';
 import { SITE_URL } from '../../lib/legalConfig';
+import { trackEvent } from '../../lib/analytics';
 import {
   mockListApplications,
   mockGetApplication,
@@ -120,6 +121,18 @@ export default function TimelineScreen() {
   useEffect(() => {
     loadBankHolidays().then(() => setBankHolidaysLoaded(true));
   }, []);
+
+  // Fires once per application, the moment every checklist item is marked
+  // complete — guarded by a ref (not just the derived boolean below) so it
+  // doesn't re-fire on every subsequent render while still complete.
+  const trackedCompletionRef = useRef(false);
+  useEffect(() => {
+    const allComplete = checklist.length > 0 && checklist.every((c) => c.is_complete);
+    if (allComplete && !trackedCompletionRef.current) {
+      trackedCompletionRef.current = true;
+      trackEvent('checklist_completed', { visa_type: visaType ?? undefined });
+    }
+  }, [checklist, visaType]);
 
   // Mints (or fetches the existing) share token once per application, up
   // front — cheap enough not to bother deferring to the Share button's first
