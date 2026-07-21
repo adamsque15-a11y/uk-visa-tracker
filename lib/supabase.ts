@@ -23,6 +23,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: isBrowser ? AsyncStorage : undefined,
     autoRefreshToken: isBrowser,
     persistSession: isBrowser,
-    detectSessionInUrl: false,
+    // Needed so the client picks up the access/refresh tokens Supabase
+    // appends to the URL after a Google OAuth redirect lands back on this
+    // app (see app/auth/login.tsx). Same isBrowser gate as the options
+    // above — there's no URL to read during the static-export build.
+    detectSessionInUrl: isBrowser,
   },
 });

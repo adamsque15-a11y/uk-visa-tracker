@@ -1,8 +1,15 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../lib/supabase';
 import { TEST_ACCOUNT, setMockSession } from '../../lib/devAuth';
+
+// Lets the in-app browser sheet used on native (WebBrowser.openAuthSessionAsync
+// below) close itself once Google redirects back — a no-op on web, where this
+// screen instead does a full-page redirect rather than opening a popup.
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -38,13 +45,76 @@ export default function LoginScreen() {
     }
   }
 
-  // Google/Apple sign-in need expo-auth-session (Google) and
-  // expo-apple-authentication (Apple) configured with your app's bundle ID
-  // and OAuth credentials in the Supabase dashboard. Stubbed here —
-  // see Supabase docs "Login with Apple/Google (React Native)" for the
-  // exact native setup once you have your app identifiers.
-  function handleGoogleAuth() {
-    setError('Google sign-in is not set up yet — wire up expo-auth-session + Supabase Google OAuth here.');
+  // Supabase's Google provider is a two-hop OAuth flow (app -> Google ->
+  // Supabase's own /auth/v1/callback, which exchanges the code server-side
+  // using the client secret -> back to us) — that server-side hop is why
+  // this calls supabase.auth.signInWithOAuth() rather than building a
+  // Google-direct AuthRequest with expo-auth-session's useAuthRequest/
+  // promptAsync, which only handles a single-hop redirect straight back to
+  // this app and has no way to receive Supabase's own exchanged session.
+  // expo-auth-session's makeRedirectUri() still does real work below: it's
+  // what computes the correct redirect target for each platform.
+  async function handleGoogleAuth() {
+    setError(null);
+    setLoading(true);
+    try {
+      const redirectTo = AuthSession.makeRedirectUri({ path: '/auth/login' });
+
+      if (Platform.OS === 'web') {
+        // supabase-js handles the redirect itself on web (window.location.href
+        // to Google, then Google -> Supabase -> back to redirectTo) — nothing
+        // left to do here once the request is sent; the page navigates away.
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo },
+        });
+        if (oauthError) {
+          setError(oauthError.message);
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Native: skip the auto-redirect and open the URL in an in-app browser
+      // sheet instead, so the OAuth flow doesn't leave the app. Supabase
+      // still does its own Google <-> Supabase exchange server-side; what
+      // comes back to `redirectTo` is Supabase's own session tokens.
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+      if (oauthError || !data?.url) {
+        setError(oauthError?.message ?? 'Could not start Google sign-in.');
+        setLoading(false);
+        return;
+      }
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (result.type !== 'success' || !('url' in result)) {
+        setLoading(false);
+        return; // user cancelled/dismissed — not an error worth surfacing
+      }
+
+      const fragment = result.url.split('#')[1] ?? '';
+      const params = new URLSearchParams(fragment);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (!accessToken || !refreshToken) {
+        setError(params.get('error_description') ?? 'Google sign-in did not return a session.');
+        setLoading(false);
+        return;
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (sessionError) setError(sessionError.message);
+      setLoading(false);
+    } catch {
+      setError('Something went wrong signing in with Google. Check your connection and try again.');
+      setLoading(false);
+    }
   }
 
   function handleAppleAuth() {
@@ -98,10 +168,10 @@ export default function LoginScreen() {
 
         <View style={styles.divider} />
 
-        <TouchableOpacity style={styles.oauthButton} onPress={handleGoogleAuth}>
-          <Text style={styles.oauthButtonText}>Continue with Google</Text>
+        <TouchableOpacity style={styles.oauthButton} onPress={handleGoogleAuth} disabled={loading}>
+          <Text style={styles.oauthButtonText}>{loading ? 'Please wait...' : 'Continue with Google'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.oauthButton} onPress={handleAppleAuth}>
+        <TouchableOpacity style={styles.oauthButton} onPress={handleAppleAuth} disabled={loading}>
           <Text style={styles.oauthButtonText}>Continue with Apple</Text>
         </TouchableOpacity>
 
