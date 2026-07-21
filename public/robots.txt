@@ -1,4 +1,3 @@
-# Replace https://example.com with the real production domain before launch.
 User-agent: *
 Disallow: /
 Disallow: /timeline
@@ -29,4 +28,4 @@ Allow: /ielts-life-skills/a1
 Allow: /ielts-life-skills/a2
 Allow: /ielts-life-skills/b1
 
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://ukvisatracker.com/sitemap.xml

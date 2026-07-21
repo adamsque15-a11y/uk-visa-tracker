@@ -23,8 +23,18 @@ export function openSupportEmail() {
   }
 }
 
-// Same placeholder domain used in public/robots.txt and public/sitemap.xml —
-// swap all three together once a real production domain is chosen. Used to
-// build absolute URLs in structured data (JSON-LD), which schema.org/Google
-// require over relative paths.
-export const SITE_URL = 'https://example.com';
+// Used to build absolute URLs in structured data (JSON-LD, which
+// schema.org/Google require over relative paths — see
+// lib/structuredData.ts) and in share links for Visa Info, Guides,
+// Insights, the Cost Calculator, and shared checklists (see the SITE_URL
+// callers across app/(tabs)/*).
+//
+// Reads EXPO_PUBLIC_SITE_URL if set — e.g. a Vercel preview deploy could
+// point this at its own preview URL without a code change — falling back to
+// the real production domain so a build with the env var left unset still
+// gets a correct, real URL rather than a broken placeholder.
+//
+// public/robots.txt and public/sitemap.xml reference the same domain but
+// are static files, not generated from this constant — update those two by
+// hand if the production domain ever changes.
+export const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://ukvisatracker.com';
