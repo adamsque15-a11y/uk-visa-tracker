@@ -47,11 +47,14 @@ export default function PrivacyPolicyScreen() {
         <BulletList
           items={[
             'Supabase — provides account authentication and hosts the database that stores your account, application, checklist, and timeline data. Supabase runs on cloud infrastructure and is bound by its own data processing terms.',
+            "Vercel Analytics and Speed Insights — first-party, cookieless tools that tell us which pages are visited and how quickly they load, so we can understand usage and improve performance. They don't collect names, emails, or any of your visa application details.",
+            "Sentry — error tracking that reports it when something breaks (e.g. the app crashes or a request fails) so we can find and fix the bug. Sentry is configured not to collect IP addresses, cookies, or the contents of your requests.",
           ]}
         />
         <Paragraph>
-          We do not currently use any analytics or error-tracking service, so no usage data is shared with a
-          third party for those purposes. If that changes, we'll update this policy before doing so.
+          None of these tools are used for advertising, and none of them receive your visa application details,
+          documents, or account contents. If you'd prefer your usage not be included in analytics or error
+          tracking, contact us at <EmailLink email={PRIVACY_CONTACT_EMAIL} /> and we'll exclude you.
         </Paragraph>
       </Section>
 

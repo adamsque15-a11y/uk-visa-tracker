@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LegalPage, Section, Paragraph, LegalCrossLink } from '../components/LegalPage';
+import { LegalPage, Section, Paragraph, LegalCrossLink, EmailLink } from '../components/LegalPage';
 import Icon, { IconName } from '../components/Icon';
 import DeleteAccountModal from '../components/DeleteAccountModal';
 import { colors, radius, spacing } from '../lib/theme';
-import { APP_NAME } from '../lib/legalConfig';
+import { APP_NAME, PRIVACY_CONTACT_EMAIL } from '../lib/legalConfig';
 import { isLocalModeActive } from '../lib/localMode';
 import { exportUserData } from '../lib/dataExport';
 
@@ -97,6 +97,43 @@ export default function PrivacyDataScreen() {
         <Paragraph>
           Just you. Your account data is locked to your account — no other user of the app, including someone
           using a different Guest Mode session on the same device, can see it.
+        </Paragraph>
+      </Section>
+
+      <Section heading="Analytics & error tracking">
+        <Paragraph>
+          We use two outside tools to help us run the app well:
+        </Paragraph>
+        <View style={styles.categoryList}>
+          <View style={styles.categoryRow}>
+            <View style={styles.categoryIconWrap}>
+              <Icon name="bar-chart-2" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.categoryTextGroup}>
+              <Text style={styles.categoryTitle}>Vercel Analytics & Speed Insights</Text>
+              <Text style={styles.categoryDescription}>
+                First-party tools that tell us which pages people visit and how fast they load, so we can see how
+                the app is used and keep it running quickly. They don't use cookies and don't know your name, email,
+                or anything about your visa application.
+              </Text>
+            </View>
+          </View>
+          <View style={styles.categoryRow}>
+            <View style={styles.categoryIconWrap}>
+              <Icon name="alert-triangle" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.categoryTextGroup}>
+              <Text style={styles.categoryTitle}>Sentry</Text>
+              <Text style={styles.categoryDescription}>
+                Catches errors when something breaks in the app — like a crash or a failed request — so we can find
+                and fix the bug. It's set up to not collect your IP address or the contents of what you were doing.
+              </Text>
+            </View>
+          </View>
+        </View>
+        <Paragraph>
+          Neither tool is used for advertising, and neither can see your account, application, or document details.
+          If you'd rather not be included, email <EmailLink email={PRIVACY_CONTACT_EMAIL} /> and we'll opt you out.
         </Paragraph>
       </Section>
 

@@ -9,7 +9,7 @@ export const COMPANY_NAME = 'UK Visa Tracker';
 export const PRIVACY_CONTACT_EMAIL = 'support@ukvisatracker.com';
 export const SUPPORT_CONTACT_EMAIL = 'support@ukvisatracker.com';
 export const GOVERNING_LAW = 'England and Wales';
-export const LEGAL_LAST_UPDATED = '14 July 2026';
+export const LEGAL_LAST_UPDATED = '22 July 2026';
 
 // Linking.openURL() opens mailto: links via window.open(url, '_blank',
 // 'noopener') on web, which browsers routinely no-op for protocol handlers —
