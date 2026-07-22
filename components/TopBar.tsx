@@ -46,10 +46,24 @@ export default function TopBar({ sidebarCollapsed, onToggleSidebar }: TopBarProp
         >
           <Icon name="menu" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/(tabs)' as never)} accessibilityLabel="UK Visa Tracker home">
-          <Image source={require('../assets/images/logo-wordmark.png')} style={styles.logo} resizeMode="contain" />
-        </TouchableOpacity>
+        {showSidebar && (
+          <TouchableOpacity onPress={() => router.push('/(tabs)' as never)} accessibilityLabel="UK Visa Tracker home">
+            <Image source={require('../assets/images/logo-wordmark.png')} style={styles.logo} resizeMode="contain" />
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Mobile only: absolutely centered so it stays visually centered in
+          the bar regardless of the hamburger's or avatar's width, instead of
+          sitting wherever space-between happens to leave it. Desktop keeps
+          the logo inline next to the hamburger, unchanged. */}
+      {!showSidebar && (
+        <View style={styles.logoCenterWrap} pointerEvents="box-none">
+          <TouchableOpacity onPress={() => router.push('/(tabs)' as never)} accessibilityLabel="UK Visa Tracker home">
+            <Image source={require('../assets/images/logo-wordmark.png')} style={styles.logo} resizeMode="contain" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <TouchableOpacity style={styles.avatar} onPress={() => setMenuOpen(true)} accessibilityLabel="Open account menu">
         <Text style={styles.avatarText}>{accountInitial(account)}</Text>
@@ -109,9 +123,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.surface,
+    position: 'relative',
   },
   leftGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   hamburger: { padding: 4, marginLeft: -4 },
+  // Mobile-only centering wrapper: covers the full bar so the logo lands in
+  // the true center regardless of hamburger/avatar width, independent of
+  // the flex flow those two sit in. box-none lets touches pass through the
+  // empty parts of this wrapper to whatever's actually underneath.
+  logoCenterWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // logo-wordmark.png's real aspect ratio is ~2.5:1 (1983x793) — sized to
   // that ratio exactly so resizeMode="contain" fills the whole box instead
   // of centering a smaller image inside empty side padding (the previous
