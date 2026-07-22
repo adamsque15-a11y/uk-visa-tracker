@@ -38,6 +38,20 @@ export default function LoginScreen() {
   // `authenticated` and _layout.tsx's existing redirect navigates away on
   // its own, same as any other freshly-authenticated user.
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  // Set when signUp() reveals the email already belongs to an account —
+  // shown as an inline message with real Sign In / reset-password links
+  // instead of the generic error banner. Two different signals for this,
+  // both documented on supabase.auth.signUp() in
+  // node_modules/@supabase/auth-js's GoTrueClient.d.ts: with "Confirm
+  // email" enabled (this project's setting, confirmed by every other auth
+  // flow here needing confirmation) signUp() returns success with no error
+  // at all — an obfuscated user object whose `identities` array is empty,
+  // specifically to avoid leaking which emails have accounts — so that has
+  // to be checked for explicitly rather than trusting the absence of
+  // `authError`. If "Confirm email" were ever disabled, Supabase instead
+  // returns a real error with code 'user_already_exists' or 'email_exists',
+  // handled the same way for that case too.
+  const [existingAccountEmail, setExistingAccountEmail] = useState<string | null>(null);
 
   async function handleEmailAuth() {
     // DEV ONLY: bypass Supabase for the local test account. Remove before shipping.
@@ -57,7 +71,7 @@ export default function LoginScreen() {
     setLoading(true);
     setError(null);
     try {
-      const { error: authError } =
+      const { data, error: authError } =
         mode === 'signin'
           ? await supabase.auth.signInWithPassword({ email, password })
           : await supabase.auth.signUp({ email, password });
@@ -66,6 +80,8 @@ export default function LoginScreen() {
           setError(
             "Please confirm your email address first — check your inbox (and spam folder) for the confirmation link we sent when you signed up."
           );
+        } else if (authError.code === 'user_already_exists' || authError.code === 'email_exists') {
+          setExistingAccountEmail(email);
         } else if (authError.message && authError.message !== '{}') {
           // supabase-js can hand back a message that's just the empty-object
           // stringification of an internal error (seen for a malformed 500
@@ -75,8 +91,12 @@ export default function LoginScreen() {
           setError('Something went wrong. Please try again.');
         }
       } else if (mode === 'signup') {
-        trackEvent('sign_up', { method: 'email' });
-        setConfirmationEmail(email);
+        if (data.user?.identities?.length === 0) {
+          setExistingAccountEmail(email);
+        } else {
+          trackEvent('sign_up', { method: 'email' });
+          setConfirmationEmail(email);
+        }
       }
     } catch {
       setError('Something went wrong. Check your connection and try again.');
@@ -236,6 +256,32 @@ export default function LoginScreen() {
               </>
             )}
 
+            {existingAccountEmail && (
+              <Text style={styles.errorText}>
+                An account with this email already exists.{' '}
+                <Text
+                  style={styles.inlineLink}
+                  onPress={() => {
+                    setExistingAccountEmail(null);
+                    setMode('signin');
+                  }}
+                >
+                  Sign in
+                </Text>{' '}
+                or{' '}
+                <Text
+                  style={styles.inlineLink}
+                  onPress={() => {
+                    setExistingAccountEmail(null);
+                    router.push({ pathname: '/auth/forgot-password', params: { email } });
+                  }}
+                >
+                  reset your password
+                </Text>{' '}
+                if you've forgotten it.
+              </Text>
+            )}
+
             {error && <Text style={styles.errorText}>{error}</Text>}
 
             <TouchableOpacity
@@ -323,6 +369,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   errorText: { color: '#c81e3a', fontSize: 13, marginBottom: 12, textAlign: 'center' },
+  inlineLink: { color: '#1a3c6e', fontWeight: '700', textDecorationLine: 'underline' },
   switchModeText: { textAlign: 'center', color: '#1a3c6e', marginTop: 16 },
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 24 },
   oauthButton: {

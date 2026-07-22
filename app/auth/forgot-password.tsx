@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 
 // Always resolves to a web URL — this app's only supported target is the
@@ -11,7 +11,11 @@ function getRedirectTo(): string | undefined {
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  // Prefilled when arriving from login.tsx's "reset your password" link
+  // (shown after signUp() reveals the email already has an account) — saves
+  // retyping it; still fully editable in case it's wrong.
+  const { email: prefillEmail } = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(prefillEmail ?? '');
   const [loading, setLoading] = useState(false);
   // Shown after submit regardless of whether the email exists — never let
   // the UI reveal that, even though resetPasswordForEmail itself already
