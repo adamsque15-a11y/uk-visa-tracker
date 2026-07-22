@@ -112,7 +112,13 @@ const styles = StyleSheet.create({
   },
   leftGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   hamburger: { padding: 4, marginLeft: -4 },
-  logo: { width: 130, height: 28 },
+  // logo-wordmark.png's real aspect ratio is ~2.5:1 (1983x793) — sized to
+  // that ratio exactly so resizeMode="contain" fills the whole box instead
+  // of centering a smaller image inside empty side padding (the previous
+  // 130x28 box was 4.6:1, so the image only ever rendered at an effective
+  // ~70x28 — the reason it still looked small despite the larger box).
+  // 40px height leaves 8px of breathing room top and bottom in the 56px bar.
+  logo: { width: 100, height: 40 },
   avatar: {
     width: 32,
     height: 32,
