@@ -13,9 +13,10 @@ import { standalonePage } from '../_shared/emailLayout.ts';
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const token = url.searchParams.get('token');
+  const siteUrl = Deno.env.get('SITE_URL') ?? '';
 
   if (!token) {
-    return new Response(standalonePage('<p>This unsubscribe link is missing a token.</p>'), {
+    return new Response(standalonePage('<p>This unsubscribe link is missing a token.</p>', siteUrl), {
       status: 400,
       headers: { 'Content-Type': 'text/html' },
     });
@@ -26,14 +27,15 @@ Deno.serve(async (req) => {
 
   if (error || !data) {
     return new Response(
-      standalonePage("<p>This link isn't valid, or you've already unsubscribed.</p>"),
+      standalonePage("<p>This link isn't valid, or you've already unsubscribed.</p>", siteUrl),
       { status: 200, headers: { 'Content-Type': 'text/html' } }
     );
   }
 
   return new Response(
     standalonePage(
-      "<p>You've been unsubscribed from reminder emails.</p><p>You'll still receive important account emails. You can turn reminders back on anytime from your Profile settings.</p>"
+      "<p>You've been unsubscribed from reminder emails.</p><p>You'll still receive important account emails. You can turn reminders back on anytime from your Profile settings.</p>",
+      siteUrl
     ),
     { status: 200, headers: { 'Content-Type': 'text/html' } }
   );

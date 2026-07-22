@@ -2,15 +2,10 @@ import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from '
 import { useRouter, usePathname } from 'expo-router';
 import { NAV_ITEMS, toPathname } from '../lib/navConfig';
 import Icon from './Icon';
+import Footer from './Footer';
 import { colors, radius, spacing } from '../lib/theme';
-import { openSupportEmail } from '../lib/legalConfig';
 
 export const SIDEBAR_WIDTH = 240;
-
-const LEGAL_LINKS: { label: string; path: '/privacy' | '/terms' }[] = [
-  { label: 'Privacy Policy', path: '/privacy' },
-  { label: 'Terms of Service', path: '/terms' },
-];
 
 interface SidebarProps {
   // Called right before navigating — lets the mobile drawer (see NavDrawer)
@@ -74,22 +69,7 @@ export default function Sidebar({ onItemPress, style }: SidebarProps) {
         })}
       </View>
 
-      <View style={styles.footer}>
-        {LEGAL_LINKS.map((link) => (
-          <TouchableOpacity key={link.path} onPress={() => go(link.path)} accessibilityLabel={link.label}>
-            <Text style={styles.footerLink}>{link.label}</Text>
-          </TouchableOpacity>
-        ))}
-        <TouchableOpacity
-          onPress={() => {
-            onItemPress?.();
-            openSupportEmail();
-          }}
-          accessibilityLabel="Contact us"
-        >
-          <Text style={styles.footerLink}>Contact us</Text>
-        </TouchableOpacity>
-      </View>
+      <Footer layout="column" onLinkPress={onItemPress} style={styles.footer} />
     </View>
   );
 }
@@ -112,7 +92,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     gap: spacing.xs,
   },
-  footerLink: { fontSize: 12.5, fontWeight: '600', color: colors.textTertiary, paddingVertical: 4 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',

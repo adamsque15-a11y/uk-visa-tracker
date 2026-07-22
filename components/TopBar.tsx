@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { PROFILE_MENU_ITEMS } from '../lib/navConfig';
 import { useAccount, accountInitial } from '../hooks/useAccount';
@@ -15,7 +15,15 @@ const LEGAL_LINKS: { label: string; path: '/privacy' | '/terms' }[] = [
   { label: 'Terms of Service', path: '/terms' },
 ];
 
-export default function TopBar() {
+interface TopBarProps {
+  // Only meaningful at desktop/tablet widths (where the persistent sidebar
+  // renders) — at mobile widths the hamburger keeps its existing job of
+  // opening NavDrawer regardless of these.
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+}
+
+export default function TopBar({ sidebarCollapsed, onToggleSidebar }: TopBarProps) {
   const router = useRouter();
   const account = useAccount();
   const showSidebar = useShowSidebar();
@@ -31,13 +39,15 @@ export default function TopBar() {
   return (
     <View style={styles.bar}>
       <View style={styles.leftGroup}>
-        {!showSidebar && (
-          <TouchableOpacity style={styles.hamburger} onPress={() => setDrawerOpen(true)} accessibilityLabel="Open menu">
-            <Icon name="menu" size={22} color={colors.textPrimary} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.hamburger}
+          onPress={showSidebar ? onToggleSidebar : () => setDrawerOpen(true)}
+          accessibilityLabel={showSidebar ? (sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar') : 'Open menu'}
+        >
+          <Icon name="menu" size={22} color={colors.textPrimary} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/(tabs)' as never)} accessibilityLabel="UK Visa Tracker home">
-          <Text style={styles.logo}>UK Visa Tracker</Text>
+          <Image source={require('../assets/images/logo-wordmark.png')} style={styles.logo} resizeMode="contain" />
         </TouchableOpacity>
       </View>
 
@@ -102,7 +112,7 @@ const styles = StyleSheet.create({
   },
   leftGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   hamburger: { padding: 4, marginLeft: -4 },
-  logo: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.1 },
+  logo: { width: 130, height: 28 },
   avatar: {
     width: 32,
     height: 32,

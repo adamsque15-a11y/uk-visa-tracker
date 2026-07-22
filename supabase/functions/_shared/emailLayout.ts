@@ -43,7 +43,7 @@ export function emailLayout({ bodyHtml, unsubscribeUrl, siteUrl }: EmailLayoutOp
 }
 
 /** Standalone confirmation page (not wrapped in emailLayout) — used by the unsubscribe function, which returns HTML directly rather than sending an email. */
-export function standalonePage(bodyHtml: string): string {
+export function standalonePage(bodyHtml: string, siteUrl: string): string {
   return `<!DOCTYPE html>
 <html>
   <body style="margin:0;background:#f7f8fa;font-family:-apple-system,Helvetica,Arial,sans-serif;">
@@ -52,8 +52,8 @@ export function standalonePage(bodyHtml: string): string {
         <td align="center" style="padding:48px 16px;">
           <table width="420" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e4e7ec;border-radius:12px;overflow:hidden;">
             <tr>
-              <td style="background:#1a3c6e;padding:20px 24px;">
-                <span style="color:#ffffff;font-size:17px;font-weight:700;">UK Visa Tracker</span>
+              <td style="background:#ffffff;padding:20px 24px;border-bottom:1px solid #e4e7ec;">
+                <img src="${siteUrl}/logo-wordmark.png" width="160" alt="UK Visa Tracker" style="display:block;height:auto;border:0;" />
               </td>
             </tr>
             <tr>

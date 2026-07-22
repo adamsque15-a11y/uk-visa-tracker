@@ -6,6 +6,7 @@ import Screen from '../components/Screen';
 import Icon, { IconName } from '../components/Icon';
 import JsonLd from '../components/JsonLd';
 import Disclaimer from '../components/Disclaimer';
+import Footer from '../components/Footer';
 import { supabase } from '../lib/supabase';
 import { buildHowToSchema, buildOrganizationSchema } from '../lib/structuredData';
 import { setPendingIntent } from '../lib/navigationIntent';
@@ -314,7 +315,7 @@ export default function HomeScreen() {
           <DesktopHero onApply={handleApply} onSeeHowItWorks={() => scrollIntoView(howItWorksRef)} />
         ) : (
           <View style={styles.hero}>
-            <Text style={styles.title}>UK Visa Tracker</Text>
+            <Image source={require('../assets/images/logo-wordmark.png')} style={styles.mobileLogo} resizeMode="contain" />
             <Text style={styles.headline}>Track every stage of your UK visa journey, from application to decision.</Text>
             <Disclaimer />
 
@@ -393,6 +394,8 @@ export default function HomeScreen() {
             immigration advice, and it doesn't assess or predict the outcome of any individual case.
           </Text>
         </View>
+
+        <Footer layout="row" style={styles.siteFooter} />
       </Screen>
     </View>
   );
@@ -715,7 +718,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg },
   hero: { alignItems: 'center', marginBottom: spacing.sm },
-  title: { ...typography.pageTitle, fontSize: 19, color: colors.textSecondary, marginBottom: 2 },
+  mobileLogo: { width: 132, height: 26, marginBottom: 6 },
   headline: {
     ...typography.pageTitle,
     fontSize: 25,
@@ -891,4 +894,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: { ...typography.caption, textAlign: 'center', maxWidth: 560 },
+  siteFooter: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
 });

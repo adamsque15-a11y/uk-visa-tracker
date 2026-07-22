@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import Icon from '../../components/Icon';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as AuthSession from 'expo-auth-session';
@@ -206,7 +206,7 @@ export default function LoginScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.title}>UK Visa Tracker</Text>
+            <Image source={require('../../assets/images/logo-wordmark.png')} style={styles.logo} resizeMode="contain" />
             <Text style={styles.subtitle}>Everything you need for your UK visa application in one place.</Text>
 
             <TextInput
@@ -338,6 +338,7 @@ const styles = StyleSheet.create({
   backButton: { position: 'absolute', top: 50, left: 20, padding: 8 },
   backButtonText: { fontSize: 15, color: '#1a3c6e', fontWeight: '600' },
   title: { fontSize: 28, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
+  logo: { width: 180, height: 36, alignSelf: 'center', marginBottom: 8 },
   confirmationEmail: { fontWeight: '700', color: '#1a3c6e' },
   subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 32 },
   input: {
