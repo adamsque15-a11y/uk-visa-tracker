@@ -30,6 +30,14 @@ export default function LoginScreen() {
   // (it silently no-ops on web) — shown inline instead, matching the pattern
   // already used by forgot-password.tsx/reset-password.tsx.
   const [error, setError] = useState<string | null>(null);
+  // Set right after a successful signUp() call — while this holds an email,
+  // the "check your inbox" screen replaces the form below instead of
+  // leaving the user looking at an unchanged form with no feedback. Cleared
+  // by the "Back to Sign In" link; if confirmation instead happens via the
+  // emailed link in this same tab, useAuth()'s session listener flips
+  // `authenticated` and _layout.tsx's existing redirect navigates away on
+  // its own, same as any other freshly-authenticated user.
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   async function handleEmailAuth() {
     // DEV ONLY: bypass Supabase for the local test account. Remove before shipping.
@@ -54,12 +62,21 @@ export default function LoginScreen() {
           ? await supabase.auth.signInWithPassword({ email, password })
           : await supabase.auth.signUp({ email, password });
       if (authError) {
-        // supabase-js can hand back a message that's just the empty-object
-        // stringification of an internal error (seen for a malformed 500
-        // from the signUp endpoint) — not something a user can act on.
-        setError(authError.message && authError.message !== '{}' ? authError.message : 'Something went wrong. Please try again.');
+        if (authError.code === 'email_not_confirmed') {
+          setError(
+            "Please confirm your email address first — check your inbox (and spam folder) for the confirmation link we sent when you signed up."
+          );
+        } else if (authError.message && authError.message !== '{}') {
+          // supabase-js can hand back a message that's just the empty-object
+          // stringification of an internal error (seen for a malformed 500
+          // from the signUp endpoint) — not something a user can act on.
+          setError(authError.message);
+        } else {
+          setError('Something went wrong. Please try again.');
+        }
       } else if (mode === 'signup') {
         trackEvent('sign_up', { method: 'email' });
+        setConfirmationEmail(email);
       }
     } catch {
       setError('Something went wrong. Check your connection and try again.');
@@ -151,98 +168,118 @@ export default function LoginScreen() {
       </TouchableOpacity>
 
       <View style={styles.card}>
-        <Text style={styles.title}>UK Visa Tracker</Text>
-        <Text style={styles.subtitle}>Everything you need for your UK visa application in one place.</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <View style={styles.passwordFieldWrapper}>
-          <TextInput
-            style={[styles.input, styles.passwordInput]}
-            placeholder="Password"
-            secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={setPassword}
-          />
-          <TouchableOpacity
-            style={styles.eyeButton}
-            onPress={() => setShowPassword((s) => !s)}
-            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-          >
-            <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} color="#999" />
-          </TouchableOpacity>
-        </View>
-
-        {mode === 'signup' && (
+        {confirmationEmail ? (
           <>
+            <Text style={styles.title}>Check your inbox</Text>
+            <Text style={styles.subtitle}>
+              We've sent a confirmation link to <Text style={styles.confirmationEmail}>{confirmationEmail}</Text>.
+              {'\n\n'}Don't see it? Check your spam or junk folder.
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setConfirmationEmail(null);
+                setMode('signin');
+              }}
+            >
+              <Text style={styles.switchModeText}>Back to Sign In</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.title}>UK Visa Tracker</Text>
+            <Text style={styles.subtitle}>Everything you need for your UK visa application in one place.</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
             <View style={styles.passwordFieldWrapper}>
               <TextInput
-                style={[styles.input, styles.passwordInput, passwordsMismatch && styles.inputError]}
-                placeholder="Confirm password"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                style={[styles.input, styles.passwordInput]}
+                placeholder="Password"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
               />
               <TouchableOpacity
                 style={styles.eyeButton}
-                onPress={() => setShowConfirmPassword((s) => !s)}
-                accessibilityLabel={showConfirmPassword ? 'Hide password' : 'Show password'}
+                onPress={() => setShowPassword((s) => !s)}
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
               >
-                <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={18} color="#999" />
+                <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} color="#999" />
               </TouchableOpacity>
             </View>
-            {passwordsMismatch && <Text style={styles.errorText}>Passwords don't match</Text>}
+
+            {mode === 'signup' && (
+              <>
+                <View style={styles.passwordFieldWrapper}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput, passwordsMismatch && styles.inputError]}
+                    placeholder="Confirm password"
+                    secureTextEntry={!showConfirmPassword}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowConfirmPassword((s) => !s)}
+                    accessibilityLabel={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <Icon name={showConfirmPassword ? 'eye-off' : 'eye'} size={18} color="#999" />
+                  </TouchableOpacity>
+                </View>
+                {passwordsMismatch && <Text style={styles.errorText}>Passwords don't match</Text>}
+              </>
+            )}
+
+            {error && <Text style={styles.errorText}>{error}</Text>}
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleEmailAuth}
+              disabled={loading || (mode === 'signup' && (confirmPassword.length === 0 || password !== confirmPassword))}
+            >
+              <Text style={styles.primaryButtonText}>
+                {loading ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Sign Up'}
+              </Text>
+            </TouchableOpacity>
+
+            {mode === 'signin' && (
+              <TouchableOpacity onPress={() => router.push('/auth/forgot-password')}>
+                <Text style={styles.switchModeText}>Forgot password?</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              onPress={() => {
+                setMode(mode === 'signin' ? 'signup' : 'signin');
+                setConfirmPassword('');
+              }}
+            >
+              <Text style={styles.switchModeText}>
+                {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity style={styles.oauthButton} onPress={handleGoogleAuth} disabled={loading}>
+              <Text style={styles.oauthButtonText}>{loading ? 'Please wait...' : 'Continue with Google'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.oauthButton} onPress={handleAppleAuth} disabled={loading}>
+              <Text style={styles.oauthButtonText}>Continue with Apple</Text>
+            </TouchableOpacity>
+
+            {__DEV__ && (
+              <Text style={styles.devHint}>
+                Dev test login: {TEST_ACCOUNT.email} / {TEST_ACCOUNT.password}
+              </Text>
+            )}
           </>
-        )}
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleEmailAuth}
-          disabled={loading || (mode === 'signup' && (confirmPassword.length === 0 || password !== confirmPassword))}
-        >
-          <Text style={styles.primaryButtonText}>
-            {loading ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Sign Up'}
-          </Text>
-        </TouchableOpacity>
-
-        {mode === 'signin' && (
-          <TouchableOpacity onPress={() => router.push('/auth/forgot-password')}>
-            <Text style={styles.switchModeText}>Forgot password?</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          onPress={() => {
-            setMode(mode === 'signin' ? 'signup' : 'signin');
-            setConfirmPassword('');
-          }}
-        >
-          <Text style={styles.switchModeText}>
-            {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.divider} />
-
-        <TouchableOpacity style={styles.oauthButton} onPress={handleGoogleAuth} disabled={loading}>
-          <Text style={styles.oauthButtonText}>{loading ? 'Please wait...' : 'Continue with Google'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.oauthButton} onPress={handleAppleAuth} disabled={loading}>
-          <Text style={styles.oauthButtonText}>Continue with Apple</Text>
-        </TouchableOpacity>
-
-        {__DEV__ && (
-          <Text style={styles.devHint}>
-            Dev test login: {TEST_ACCOUNT.email} / {TEST_ACCOUNT.password}
-          </Text>
         )}
       </View>
     </View>
@@ -255,6 +292,7 @@ const styles = StyleSheet.create({
   backButton: { position: 'absolute', top: 50, left: 20, padding: 8 },
   backButtonText: { fontSize: 15, color: '#1a3c6e', fontWeight: '600' },
   title: { fontSize: 28, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
+  confirmationEmail: { fontWeight: '700', color: '#1a3c6e' },
   subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 32 },
   input: {
     borderWidth: 1,
