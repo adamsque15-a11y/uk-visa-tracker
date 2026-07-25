@@ -2,7 +2,6 @@ User-agent: *
 Disallow: /
 Disallow: /timeline
 Disallow: /costs
-Disallow: /ielts-a1-test
 Disallow: /shared
 Disallow: /profile
 Disallow: /questionnaire
@@ -21,6 +20,7 @@ Allow: /visa-info/child
 Allow: /visa-info/settlement
 Allow: /visa-info/citizenship
 Allow: /guides
+Allow: /guides/*
 Allow: /community
 Allow: /privacy
 Allow: /terms

@@ -2,5 +2,24 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": null,
-  "cleanUrls": true
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/ielts-a1-test",
+      "has": [{ "type": "query", "key": "level", "value": "a2" }],
+      "destination": "/ielts-life-skills/a2",
+      "permanent": true
+    },
+    {
+      "source": "/ielts-a1-test",
+      "has": [{ "type": "query", "key": "level", "value": "b1" }],
+      "destination": "/ielts-life-skills/b1",
+      "permanent": true
+    },
+    {
+      "source": "/ielts-a1-test",
+      "destination": "/ielts-life-skills/a1",
+      "permanent": true
+    }
+  ]
 }

@@ -48,14 +48,21 @@ function RootLayoutNav() {
     // Privacy/Terms are legal disclosures — they need to stay reachable
     // (e.g. from a shared link) whether or not the visitor is signed in.
     const inLegalGroup = segments[0] === 'privacy' || segments[0] === 'terms';
-    // Visa Info, Guides, and Insights are public, search-indexable content
-    // — the app's main organic-traffic surfaces — so all three must be
-    // reachable and fully renderable without an account. Insights also
-    // carries share buttons (see ShareButtons in community.tsx): a shared
-    // link is pointless if the recipient just gets bounced to Home.
+    // Visa Info, Guides, Insights, and IELTS Life Skills are public,
+    // search-indexable content — the app's main organic-traffic surfaces —
+    // so all four must be reachable and fully renderable without an
+    // account. Insights also carries share buttons (see ShareButtons in
+    // community.tsx): a shared link is pointless if the recipient just gets
+    // bounced to Home. IELTS Life Skills lessons/quizzes/progress are
+    // AsyncStorage-only (see lib/englishPrep/progress.ts) — nothing here is
+    // account-tied, so there's nothing private this exposes; only Premium
+    // features stay gated, via PremiumGate, unrelated to this check.
     const inPublicContentGroup =
       segments[0] === '(tabs)' &&
-      (segments[1] === 'visa-info' || segments[1] === 'guides' || segments[1] === 'community');
+      (segments[1] === 'visa-info' ||
+        segments[1] === 'guides' ||
+        segments[1] === 'community' ||
+        segments[1] === 'ielts-life-skills');
     // Shared, read-only summary links (Checklist/Cost Calculator) — meant to
     // be opened by someone the link was sent to, who has no account at all.
     const inSharedGroup = segments[0] === 'shared';
