@@ -10,6 +10,7 @@ Disallow: /privacy-data
 Disallow: /quick-track
 Disallow: /auth/
 
+Allow: /$
 Allow: /home
 Allow: /visa-info
 Allow: /visa-info/spouse
