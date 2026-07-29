@@ -43,6 +43,10 @@ export default function QuestionnaireScreen() {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [pendingApplicationId, setPendingApplicationId] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+  // React Native's Alert.alert has no web implementation in this app's setup
+  // (it silently no-ops on web, see app/quick-track.tsx for the same fix) —
+  // shown inline instead, so a failed save is actually visible.
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [applicantName, setApplicantName] = useState('');
   const [nationality, setNationality] = useState('');
@@ -92,9 +96,10 @@ export default function QuestionnaireScreen() {
   }, [applicationId]);
 
   async function handleSubmit() {
+    setFormError(null);
     if (nameMissing || nationalityMissing || countryApplyingFromMissing || visaTypeMissing || incomeCountryMissing) {
       setShowErrors(true);
-      Alert.alert('Missing info', 'Please fill in all required fields (marked with *).');
+      setFormError('Please fill in all required fields (marked with *).');
       return;
     }
     if (!visaType) return; // unreachable — narrows visaType below
@@ -146,7 +151,7 @@ export default function QuestionnaireScreen() {
       const { data: userData } = await supabase.auth.getUser();
       const ownerId = userData.user?.id;
       if (!ownerId) {
-        Alert.alert('Error', 'You must be signed in.');
+        setFormError('You must be signed in.');
         setSaving(false);
         return;
       }
@@ -158,7 +163,7 @@ export default function QuestionnaireScreen() {
         .single();
 
       if (error || !application) {
-        Alert.alert('Error saving application', error?.message ?? 'Unknown error');
+        setFormError(error?.message ?? 'Something went wrong saving your application. Please try again.');
         setSaving(false);
         return;
       }
@@ -374,6 +379,8 @@ export default function QuestionnaireScreen() {
         </TouchableOpacity>
       </View>
 
+      {formError && <Text style={styles.errorText}>{formError}</Text>}
+
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={saving}>
         <Text style={styles.submitButtonText}>
           {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Get My Checklist'}
@@ -446,6 +453,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepperButtonText: { fontSize: 20, fontWeight: '600', color: '#1a3c6e' },
+  errorText: { color: '#c0392b', fontSize: 13, marginTop: 20, textAlign: 'center' },
   stepperInput: {
     borderWidth: 1,
     borderColor: '#ddd',
