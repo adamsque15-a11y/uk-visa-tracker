@@ -32,7 +32,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     Promise.all([supabase.auth.getSession(), loadGuestMode()]).then(([{ data }, guest]) => {
       setSession(data.session);
-      setGuestModeState(guest);
+      // Don't blindly reapply the guest flag this just read from storage —
+      // on a fresh page load where a session is *also* already present
+      // (e.g. mid a Google OAuth redirect, where the whole app reloads and
+      // this and the onAuthStateChange listener below both race from
+      // scratch), a real session means the visitor isn't actually a guest
+      // anymore, even though the persisted flag hasn't caught up yet.
+      // Supabase's own _initialize() defers its SIGNED_IN notification via
+      // setTimeout(0) while getSession() unblocks on the earlier microtask
+      // that resolves it, so this can genuinely settle before that listener
+      // fires — do the same clear here rather than trust which of the two
+      // happens to run last. setGuestMode() (not the raw state setter)
+      // keeps this in sync with the persisted flag and every other
+      // subscriber, so whichever of the two paths runs second just finds it
+      // already correct and no-ops.
+      if (data.session && guest) {
+        setGuestMode(false);
+      } else {
+        setGuestModeState(guest);
+      }
       setLoading(false);
     });
 
@@ -46,6 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // OAuth, a confirmed signup's emailed link) since they all funnel
       // through this one listener, unlike the dev test account bypass in
       // login.tsx which never touches supabase.auth and clears it directly.
+      // Mirrors the same clear in the Promise.all().then() above — see its
+      // comment for why both paths need to do this independently rather
+      // than relying on whichever one happens to run last.
       if (newSession && isGuestModeActive()) {
         setGuestMode(false);
       }
