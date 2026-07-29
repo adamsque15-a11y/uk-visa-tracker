@@ -6,6 +6,7 @@ import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../../lib/supabase';
 import { TEST_ACCOUNT, setMockSession } from '../../lib/devAuth';
+import { setGuestMode } from '../../lib/guestMode';
 import { trackEvent } from '../../lib/analytics';
 
 // Lets the in-app browser sheet used on native (WebBrowser.openAuthSessionAsync
@@ -57,6 +58,10 @@ export default function LoginScreen() {
     // DEV ONLY: bypass Supabase for the local test account. Remove before shipping.
     if (email === TEST_ACCOUNT.email && password === TEST_ACCOUNT.password) {
       setMockSession(true);
+      // This never touches supabase.auth, so useAuth()'s onAuthStateChange
+      // listener (which clears Guest Mode for every real sign-in) never
+      // fires for it — clear it here directly for the same reason.
+      await setGuestMode(false);
       return;
     }
 

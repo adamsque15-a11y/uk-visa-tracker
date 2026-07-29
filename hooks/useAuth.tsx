@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { isMockSessionActive, subscribeMockSession } from '../lib/devAuth';
-import { loadGuestMode, isGuestModeActive, subscribeGuestMode } from '../lib/guestMode';
+import { loadGuestMode, isGuestModeActive, setGuestMode, subscribeGuestMode } from '../lib/guestMode';
 
 export interface AuthState {
   loading: boolean;
@@ -38,6 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
+      // A real session appearing means the visitor is genuinely signed in —
+      // clear any lingering Guest Mode flag from before they signed in, so
+      // guest-only UI (the persistent banner, quick-track's "save your
+      // progress?" prompt) doesn't keep treating them as a guest. Covers
+      // every path a session can appear from (password sign-in, Google
+      // OAuth, a confirmed signup's emailed link) since they all funnel
+      // through this one listener, unlike the dev test account bypass in
+      // login.tsx which never touches supabase.auth and clears it directly.
+      if (newSession && isGuestModeActive()) {
+        setGuestMode(false);
+      }
     });
 
     const unsubscribeMock = subscribeMockSession(setMockSession);

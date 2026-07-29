@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import Screen from '../components/Screen';
 import { supabase } from '../lib/supabase';
@@ -26,14 +26,20 @@ export default function QuickTrackScreen() {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [pendingApplicationId, setPendingApplicationId] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+  // React Native's Alert.alert has no web implementation in this app's setup
+  // (it silently no-ops on web, same issue already worked around in
+  // login.tsx/forgot-password.tsx) — shown inline instead, so a failed save
+  // is actually visible rather than leaving the button looking unresponsive.
+  const [formError, setFormError] = useState<string | null>(null);
 
   const nameMissing = !applicantName.trim();
   const visaTypeMissing = !visaType;
 
   async function handleSubmit() {
+    setFormError(null);
     if (nameMissing || visaTypeMissing) {
       setShowErrors(true);
-      Alert.alert('Missing info', 'Please fill in all required fields (marked with *).');
+      setFormError('Please fill in all required fields (marked with *).');
       return;
     }
     if (!visaType) return; // unreachable — narrows visaType below
@@ -59,7 +65,7 @@ export default function QuickTrackScreen() {
       const { data: userData } = await supabase.auth.getUser();
       const ownerId = userData.user?.id;
       if (!ownerId) {
-        Alert.alert('Error', 'You must be signed in.');
+        setFormError('You must be signed in.');
         setSaving(false);
         return;
       }
@@ -71,7 +77,7 @@ export default function QuickTrackScreen() {
         .single();
 
       if (error || !application) {
-        Alert.alert('Error saving application', error?.message ?? 'Unknown error');
+        setFormError(error?.message ?? 'Something went wrong saving your application. Please try again.');
         setSaving(false);
         return;
       }
@@ -168,6 +174,8 @@ export default function QuickTrackScreen() {
         ))}
       </View>
 
+      {formError && <Text style={styles.errorText}>{formError}</Text>}
+
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={saving}>
         <Text style={styles.submitButtonText}>{saving ? 'Setting up...' : 'Start Tracking'}</Text>
       </TouchableOpacity>
@@ -214,6 +222,7 @@ const styles = StyleSheet.create({
   optionChipSelected: { backgroundColor: '#1a3c6e', borderColor: '#1a3c6e' },
   optionChipText: { fontSize: 13, color: '#333' },
   optionChipTextSelected: { color: '#fff', fontWeight: '600' },
+  errorText: { color: '#c0392b', fontSize: 13, marginTop: 20, textAlign: 'center' },
   submitButton: { backgroundColor: '#1a3c6e', borderRadius: 10, padding: 16, alignItems: 'center', marginTop: 28 },
   submitButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
