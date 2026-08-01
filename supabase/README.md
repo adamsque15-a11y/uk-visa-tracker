@@ -1,12 +1,17 @@
 # Email infrastructure — deploy guide
 
 This directory (`migrations/`, `functions/`) implements the welcome email
-and biometrics/decision-date reminder emails described in the app. None of
-it is live yet — it needs to be deployed to your actual Supabase project via
-the steps below. It was written and typechecked (`deno check`, if you have
-the Deno CLI locally) but **not deployed or sent from a real inbox** —
-that's the one part of this that only you can do, since it needs your
-Supabase project's access token and a Resend API key.
+and biometrics/decision-date reminder emails described in the app.
+
+**Status as of 2026-08-02**: all four functions are deployed
+(`send-welcome-email`, `send-reminder-emails`, `unsubscribe`,
+`delete-account`), `RESEND_API_KEY` and `SITE_URL` are set, and the base
+schema/migration have been applied. The three Vault secrets
+(`edge_function_service_role_key`, `welcome_email_url`,
+`reminder_email_url`) are the one remaining manual step — see
+"5. Post-deploy SQL" below; until they exist, `trigger_welcome_email()` and
+the reminder cron safely no-op rather than error, so nothing is broken in
+the meantime, no emails are going out yet either.
 
 ## What's here
 
@@ -29,6 +34,12 @@ Supabase project's access token and a Resend API key.
 - `functions/_shared/` — email template/layout, Resend API wrapper, and a
   Deno port of the working-days calculation (duplicated from `lib/`, not
   imported — Edge Functions bundle independently of the Expo app).
+- `config.toml` — per-function JWT verification settings. Only
+  `unsubscribe` needs `verify_jwt = false` (it's reached by a bare link in
+  an email with no session at all); the other three are correctly left at
+  the default `true`. Deploying without this file present reverts every
+  function to `verify_jwt = true`, which silently breaks `unsubscribe` —
+  see the comment at the top of the file for the full story.
 
 ## Deploy steps
 
@@ -46,11 +57,25 @@ supabase functions deploy send-welcome-email
 supabase functions deploy send-reminder-emails
 supabase functions deploy unsubscribe
 supabase functions deploy delete-account
+# unsubscribe deploys with verify_jwt = false automatically — see
+# supabase/config.toml. Don't skip having that file in place before this
+# step: without it, the CLI defaults every function to verify_jwt = true,
+# which breaks unsubscribe (it's reached by a bare link in an email
+# footer, clicked with no session at all — a required JWT means the
+# gateway 401s before the function's own code, which already scopes
+# access via the token in the URL rather than a login, ever runs).
 
-# 4. Set the Resend API key as a function secret
+# 4. Set the Resend API key and site URL as function secrets
 supabase secrets set RESEND_API_KEY=<your-resend-api-key>
+supabase secrets set SITE_URL=<your-production-site-url>   # e.g. https://ukvisatracker.com, no trailing slash
 # SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY are injected
 # automatically into every Edge Function — nothing to set for those.
+#
+# SITE_URL is used directly in every email template's logo image and
+# button links (see functions/_shared/emailLayout.ts and the standalone
+# unsubscribe confirmation page) — without it, emails go out with a
+# broken logo and dead-end buttons/links rather than erroring, so this is
+# easy to silently skip. Don't.
 ```
 
 ## 5. Post-deploy SQL (run once, in the Supabase SQL editor)

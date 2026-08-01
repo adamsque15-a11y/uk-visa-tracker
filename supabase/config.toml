@@ -1,0 +1,35 @@
+# Per-function JWT verification settings for `supabase functions deploy`.
+#
+# Without this file, the CLI defaults every function to verify_jwt = true —
+# which broke `unsubscribe` on its first deploy (2026-08-02): that function
+# is reached by a bare link in an email footer, clicked by someone with no
+# session at all, so requiring a JWT at the gateway made every unsubscribe
+# link 401 before the function's own code (which already scopes access via
+# the token in the URL, not a login) ever ran. Fixed with a one-off
+# `--no-verify-jwt` redeploy; this file makes that setting permanent so a
+# future `supabase functions deploy unsubscribe` (without remembering the
+# flag) can't quietly reintroduce the same bug.
+#
+# The other three functions are correctly left at verify_jwt = true:
+# send-welcome-email and send-reminder-emails are only ever called from
+# Postgres via pg_net with the service-role key as the Authorization header
+# (see lib/schema.sql's trigger_welcome_email() and the cron job) — a real
+# JWT is always present, and requiring one stops anyone else from
+# triggering an email send by hitting the URL directly. delete-account is
+# invoked from the app via supabase.functions.invoke(), which attaches the
+# caller's own session token automatically — it explicitly needs to verify
+# that token to know whose account to delete.
+
+project_id = "eukjubrtsqwqivrlgeqw"
+
+[functions.send-welcome-email]
+verify_jwt = true
+
+[functions.send-reminder-emails]
+verify_jwt = true
+
+[functions.unsubscribe]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true
