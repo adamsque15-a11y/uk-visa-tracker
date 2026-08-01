@@ -110,12 +110,22 @@ emails just won't send yet.
 
 ## 6. Verified sending domain
 
-Resend's shared `onboarding@resend.dev` sender (already set in
-`functions/_shared/resendClient.ts`) works for testing without any extra
-setup, but has stricter sending limits and doesn't look like it's really
-from you. Before relying on this for real users, verify your own domain in
-the [Resend dashboard](https://resend.com/domains) and update
-`FROM_ADDRESS` in `_shared/resendClient.ts`.
+**Done as of 2026-08-02.** `ukvisatracker.com` is DNS-verified in Resend
+(DKIM/SPF confirmed), and `FROM_ADDRESS` in `_shared/resendClient.ts` sends
+from `notifications@ukvisatracker.com` (reply-to stays `support@`, matching
+the contact-address convention used elsewhere — see `lib/legalConfig.ts`).
+
+This replaced Resend's shared `onboarding@resend.dev` test sender, which
+was the actual cause of an earlier "trigger fires, function returns 200,
+but no email ever arrives" bug: that sender only accepts sends to the
+Resend account's own address, and `resendClient.ts`'s `sendEmail()`
+deliberately soft-fails (logs and returns, doesn't throw) on a rejected
+Resend response — by design, so one bad address in a reminder batch
+doesn't take down the rest of the sweep — which meant the 403 rejection
+never surfaced anywhere except the Edge Function's own logs. A `200 "OK"`
+from `send-welcome-email` on its own was never actually proof of delivery
+because of this; check Resend's own [Emails dashboard](https://resend.com/emails)
+for the authoritative send status if this is ever in doubt again.
 
 ## Testing without waiting for cron
 

@@ -8,11 +8,16 @@ interface SendEmailOptions {
   html: string;
 }
 
-// Resend's own shared test sender — swap for a verified sending domain
-// (e.g. "UK Visa Tracker <notifications@ukvisatracker.com>") before going
-// live; Resend requires the domain to be DNS-verified first, so this can't
-// just be typed in. The display name and reply-to are already real.
-const FROM_ADDRESS = 'UK Visa Tracker <onboarding@resend.dev>';
+// ukvisatracker.com is now DNS-verified in Resend (DKIM/SPF confirmed) —
+// switched off Resend's shared onboarding@resend.dev test sender, which
+// only accepts sends to the Resend account's own address and silently
+// 403s on anyone else (see resendClient's soft-fail below — that's how
+// this went unnoticed until checked against the Edge Function logs
+// directly). notifications@ up here, support@ as the reply-to below,
+// matching the support@ convention already used for contact links
+// elsewhere (see lib/legalConfig.ts) — replies land in the inbox someone
+// actually reads, not a no-reply address.
+const FROM_ADDRESS = 'UK Visa Tracker <notifications@ukvisatracker.com>';
 const REPLY_TO_ADDRESS = 'support@ukvisatracker.com';
 
 export async function sendEmail({ to, subject, html }: SendEmailOptions): Promise<void> {
