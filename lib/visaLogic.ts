@@ -13,6 +13,20 @@
  * always confirm against current GOV.UK guidance or a qualified adviser."
  */
 
+import {
+  SAVINGS_FORMULA,
+  SAVINGS_EXAMPLE_ALONE,
+  SAVINGS_EXAMPLE_COMBINED,
+  SAVINGS_HOLD_REINFORCEMENT,
+  SAVINGS_STOCKS_SHARES_NOTE,
+  SAVINGS_COMBINING_NOTE,
+  OVERSEAS_SALARY_EVIDENCE,
+  OVERSEAS_FOREIGN_BANK_NOTE,
+  CATEGORY_B_TITLE,
+  CATEGORY_B_EXPLANATION,
+  ENTRY_CLEARANCE_LIMITATION_NOTE,
+} from './financialRequirementContent';
+
 export type VisaType = 'spouse' | 'skilled_worker' | 'student' | 'visitor';
 
 export interface QuestionnaireAnswers {
@@ -194,7 +208,12 @@ const BASE_ITEMS: Record<VisaType, ChecklistItem[]> = {
       requirements: [
         'Salaried employment: 6 months’ payslips + matching bank statements showing the salary being paid in, plus an employer letter on headed paper confirming role, salary, and length of employment.',
         'Self-employed: normally the latest full financial year’s tax return (SA302) or equivalent, an accountant’s letter, and business bank statements.',
-        'Relying on savings: a specified minimum in cash savings held for at least 6 months, used to bridge any income shortfall.',
+        SAVINGS_FORMULA,
+        SAVINGS_EXAMPLE_ALONE,
+        SAVINGS_EXAMPLE_COMBINED,
+        SAVINGS_HOLD_REINFORCEMENT,
+        SAVINGS_STOCKS_SHARES_NOTE,
+        SAVINGS_COMBINING_NOTE,
         'Overseas income is subject to stricter rules than UK income — see the separate overseas income item if this applies to you.',
       ],
       examples: [
@@ -203,6 +222,7 @@ const BASE_ITEMS: Record<VisaType, ChecklistItem[]> = {
         'Employer reference letter on headed paper',
         'SA302 tax calculation (self-employed)',
         'Savings account statements',
+        'Portfolio report or documentation from a regulated financial institution (if relying on liquidated stocks, shares, or investments)',
       ],
       commonMistakes: [
         'Bank statements with gaps',
@@ -516,19 +536,28 @@ export function generateChecklist(answers: QuestionnaireAnswers): ChecklistItem[
   if (answers.visaType === 'spouse' && answers.incomeCountry === 'overseas') {
     items.push({
       key: 'overseas_income_evidence',
-      label: 'Overseas income evidence (specified evidence rules)',
+      label: `Overseas income evidence & ${CATEGORY_B_TITLE}`,
       explanation:
-        'Overseas income is subject to stricter specified evidence rules (Appendix FM-SE) than UK income, since the Home Office also needs confidence the income will continue and can reach a UK account.',
+        'Overseas income is subject to stricter specified evidence rules (Appendix FM-SE) than UK income, since the Home Office also needs confidence the income will continue and can reach a UK account. If the sponsor instead has a confirmed UK job offer, the Category B route below may apply.',
       requirements: [
-        '6 months of payslips plus an employer letter on headed paper, same as UK income evidence.',
-        CERTIFIED_TRANSLATION_RULE,
+        OVERSEAS_SALARY_EVIDENCE,
         'Evidence of how the income will convert to/transfer into a UK bank account (e.g. exchange rate records, transfer history).',
+        OVERSEAS_FOREIGN_BANK_NOTE,
+        `${CATEGORY_B_TITLE}: ${CATEGORY_B_EXPLANATION}`,
+        ENTRY_CLEARANCE_LIMITATION_NOTE,
       ],
-      examples: ['Overseas payslips + certified translation', 'Employer letter on headed paper', 'Currency conversion/bank transfer records'],
+      examples: [
+        'Overseas payslips + certified translation',
+        'Employer letter on headed paper',
+        'Currency conversion/bank transfer records',
+        'Employer letter confirming UK job offer, gross annual salary, and start date (Category B route)',
+        'Signed UK employment contract showing the start date (Category B route)',
+      ],
       commonMistakes: [
         'Missing certified translation',
         'Employer letter not on headed paper',
         'No evidence of how income will convert or transfer to a UK account',
+        'Using the applicant’s own overseas employment income toward the requirement on an entry clearance application, when only the sponsor’s employment income counts',
       ],
     });
   }

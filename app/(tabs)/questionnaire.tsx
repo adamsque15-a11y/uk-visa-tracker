@@ -15,6 +15,20 @@ import {
 import CountryPicker from '../../components/CountryPicker';
 import SolicitorReferralCard from '../../components/SolicitorReferralCard';
 import { getCurrencyForCountry, convertToGBP, formatThousands } from '../../lib/currency';
+import {
+  SAVINGS_FORMULA,
+  SAVINGS_EXAMPLE_ALONE,
+  SAVINGS_EXAMPLE_COMBINED,
+  SAVINGS_HOLD_REINFORCEMENT,
+  SAVINGS_STOCKS_SHARES_NOTE,
+  SAVINGS_COMBINING_NOTE,
+  OVERSEAS_SALARY_EVIDENCE,
+  OVERSEAS_FOREIGN_BANK_NOTE,
+  CATEGORY_B_TITLE,
+  CATEGORY_B_EXPLANATION,
+  ENTRY_CLEARANCE_LIMITATION_NOTE,
+  FINANCIAL_REQUIREMENT_DISCLAIMER,
+} from '../../lib/financialRequirementContent';
 import { isLocalModeActive } from '../../lib/localMode';
 import { isGuestModeActive } from '../../lib/guestMode';
 import {
@@ -360,6 +374,44 @@ export default function QuestionnaireScreen() {
         </Text>
       )}
 
+      {visaType === 'spouse' && (
+        <View style={styles.financialInfoBox}>
+          <Text style={styles.financialInfoTitle}>Using savings to meet the requirement</Text>
+          <Text style={styles.financialInfoText}>{SAVINGS_FORMULA}</Text>
+          <Text style={[styles.financialInfoText, styles.financialInfoBullet]}>• {SAVINGS_EXAMPLE_ALONE}</Text>
+          <Text style={[styles.financialInfoText, styles.financialInfoBullet]}>• {SAVINGS_EXAMPLE_COMBINED}</Text>
+          <Text style={[styles.financialInfoText, styles.financialInfoParagraphSpaced]}>
+            {SAVINGS_HOLD_REINFORCEMENT}
+          </Text>
+          <Text style={[styles.financialInfoText, styles.financialInfoParagraphSpaced]}>
+            {SAVINGS_STOCKS_SHARES_NOTE}
+          </Text>
+          <Text style={[styles.financialInfoText, styles.financialInfoParagraphSpaced]}>
+            {SAVINGS_COMBINING_NOTE}
+          </Text>
+
+          {incomeCountry === 'overseas' && (
+            <>
+              <Text style={[styles.financialInfoTitle, styles.financialInfoTitleSpaced]}>
+                Overseas salary evidence
+              </Text>
+              <Text style={styles.financialInfoText}>{OVERSEAS_SALARY_EVIDENCE}</Text>
+              <Text style={[styles.financialInfoText, styles.financialInfoParagraphSpaced]}>
+                {OVERSEAS_FOREIGN_BANK_NOTE}
+              </Text>
+
+              <Text style={[styles.financialInfoTitle, styles.financialInfoTitleSpaced]}>{CATEGORY_B_TITLE}</Text>
+              <Text style={styles.financialInfoText}>{CATEGORY_B_EXPLANATION}</Text>
+              <Text style={[styles.financialInfoText, styles.financialInfoParagraphSpaced]}>
+                {ENTRY_CLEARANCE_LIMITATION_NOTE}
+              </Text>
+            </>
+          )}
+
+          <Text style={styles.financialInfoDisclaimer}>{FINANCIAL_REQUIREMENT_DISCLAIMER}</Text>
+        </View>
+      )}
+
       <Text style={styles.label}>How many children are included in this application?</Text>
       <View style={styles.stepperRow}>
         <TouchableOpacity
@@ -442,6 +494,20 @@ const styles = StyleSheet.create({
     borderColor: '#dde1e6',
   },
   incomeCheckText: { fontSize: 13, fontWeight: '500', color: '#333', flex: 1 },
+  financialInfoBox: {
+    borderRadius: 10,
+    padding: 14,
+    marginTop: 12,
+    backgroundColor: '#f2f4f7',
+    borderWidth: 1,
+    borderColor: '#dde1e6',
+  },
+  financialInfoTitle: { fontSize: 13, fontWeight: '700', color: '#1a3c6e', marginBottom: 6 },
+  financialInfoTitleSpaced: { marginTop: 14 },
+  financialInfoText: { fontSize: 12, color: '#444', lineHeight: 18 },
+  financialInfoBullet: { marginTop: 6, marginLeft: 4 },
+  financialInfoParagraphSpaced: { marginTop: 10 },
+  financialInfoDisclaimer: { fontSize: 11, color: '#888', lineHeight: 16, marginTop: 14 },
   stepperRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   stepperButton: {
     width: 40,
